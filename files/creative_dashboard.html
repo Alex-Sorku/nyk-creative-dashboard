@@ -203,7 +203,7 @@ td:first-child{text-align:left;font-family:'DM Sans',sans-serif;font-size:11px;c
     <button class="date-preset active" data-from="2026-05-24" data-to="2026-06-01">All</button>
     <button class="date-preset" data-from="2026-05-25" data-to="2026-05-31">7d</button>
     <button class="date-preset" data-from="2026-05-29" data-to="2026-05-31">3d</button>
-    <button class="date-preset" data-from="2026-05-31" data-to="2026-05-31">May 31</button>
+    <button class="date-preset" data-role="latest" data-from="2026-05-31" data-to="2026-05-31">May 31</button>
     <span class="date-badge" id="date-badge"></span>
   </div>
 </div>
@@ -1368,6 +1368,14 @@ document.querySelectorAll('.date-preset').forEach(btn => {
   });
   S.dateFrom = minD;
   S.dateTo   = maxD;
+  // Keep the "latest day" preset always pointing to the most recent data day
+  const latestBtn = document.querySelector('.date-preset[data-role="latest"]');
+  if (latestBtn) {
+    const lastLbl = DAY_LBLS[DAY_LBLS.length - 1] || maxD.slice(5);
+    latestBtn.dataset.from    = maxD;
+    latestBtn.dataset.to      = maxD;
+    latestBtn.textContent     = lastLbl;
+  }
 })();
 
 initDD('des',   ALL_DES,    'dd-des-btn',   'dd-des-panel',   'dd-des-list',   'dd-des-q');

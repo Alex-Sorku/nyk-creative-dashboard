@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grasp vs Beezb — May 22-23 Comparison</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root{
+  --bg:#f8f9fa;--bg2:#fff;--bg3:#f1f3f5;--border:#dee2e6;--border2:#ced4da;
+  --text:#1a1d23;--text2:#495057;--text3:#868e96;
+  --red:#e03131;--green:#2f9e44;--amber:#e67700;--blue:#1971c2;
+  --grasp:#1971c2;--beezb:#6741d9;
+  --grasp-bg:#e8f4fd;--beezb-bg:#f3f0ff;
+  --shadow:0 1px 3px rgba(0,0,0,0.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.5;}
+.header{padding:1.25rem 2rem 1rem;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(248,249,250,0.97);backdrop-filter:blur(8px);z-index:100;box-shadow:var(--shadow);}
+.header-top{display:flex;align-items:baseline;gap:1rem;margin-bottom:.75rem;flex-wrap:wrap;}
+.header-title{font-size:17px;font-weight:600;letter-spacing:-0.02em;}
+.header-sub{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;}
+.tag{display:inline-block;font-size:10px;padding:2px 8px;border-radius:12px;font-weight:600;font-family:'DM Mono',monospace;}
+.tag-g{background:var(--grasp-bg);color:var(--grasp);}
+.tag-b{background:var(--beezb-bg);color:var(--beezb);}
+.nav{display:flex;gap:4px;flex-wrap:wrap;}
+.nav-btn{font-family:'DM Mono',monospace;font-size:11px;padding:4px 12px;border:1px solid var(--border2);border-radius:4px;background:#fff;color:var(--text2);cursor:pointer;transition:all .15s;}
+.nav-btn:hover{border-color:var(--blue);color:var(--blue);}
+.nav-btn.active{background:var(--blue);border-color:var(--blue);color:#fff;}
+.content{max-width:1500px;margin:0 auto;padding:1.5rem 2rem 4rem;}
+.section{display:none;}.section.active{display:block;}
+.sec-head{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:1rem;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.note{font-size:11px;color:var(--amber);font-family:'DM Mono',monospace;background:#fff9db;border:1px solid #f0c000;border-radius:6px;padding:8px 12px;margin-bottom:1rem;}
+
+.kpi-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:1.5rem;}
+.kpi-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px;box-shadow:var(--shadow);}
+.kpi-card-head{font-size:11px;font-weight:600;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid;}
+.kpi-card-head.g{color:var(--grasp);border-color:var(--grasp);}
+.kpi-card-head.b{color:var(--beezb);border-color:var(--beezb);}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;}
+.kpi{background:var(--bg3);border-radius:6px;padding:8px 10px;}
+.kpi-l{font-size:9px;color:var(--text3);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;}
+.kpi-v{font-size:17px;font-weight:600;font-family:'DM Mono',monospace;}
+.kpi-d{font-size:9px;margin-top:2px;font-family:'DM Mono',monospace;color:var(--text3);}
+.kpi.hl{background:var(--grasp-bg);}.kpi.hl2{background:var(--beezb-bg);}
+
+.tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);margin-bottom:1.25rem;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+thead{background:var(--bg3);}
+thead th{font-size:10px;font-weight:600;color:var(--text3);text-align:right;padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.04em;}
+thead th:first-child{text-align:left;}
+thead th.g{color:var(--grasp);}
+thead th.b{color:var(--beezb);}
+thead th.d{color:var(--text3);}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:var(--bg3);}
+td{padding:7px 10px;text-align:right;white-space:nowrap;font-family:'DM Mono',monospace;font-size:12px;}
+td:first-child{text-align:left;font-family:'DM Sans',sans-serif;font-weight:500;}
+.total-row td{border-top:2px solid var(--border2);font-weight:700;background:#f8f9fa;}
+.sep{background:#dee2e6 !important;padding:0 !important;width:8px;}
+.delta-pos{color:var(--green);font-weight:600;}
+.delta-neg{color:var(--red);font-weight:600;}
+.delta-neu{color:var(--text3);}
+.na{color:var(--text3);font-style:italic;}
+.win-g{color:var(--grasp);font-weight:700;}
+.win-b{color:var(--beezb);font-weight:700;}
+.low-roas{color:var(--amber);}
+
+.insight{background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:1rem;box-shadow:var(--shadow);}
+.insight-title{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+.insight ul{list-style:none;display:flex;flex-direction:column;gap:5px;}
+.insight li{font-size:13px;color:var(--text2);padding-left:16px;position:relative;line-height:1.5;}
+.insight li::before{content:"→";position:absolute;left:0;color:var(--text3);}
+.insight li strong{color:var(--text);}
+.insight li .g{color:var(--grasp);font-weight:600;}
+.insight li .b{color:var(--beezb);font-weight:600;}
+.badge{display:inline-block;font-size:9px;padding:1px 6px;border-radius:3px;margin-left:5px;font-weight:700;vertical-align:middle;}
+.bg-g{background:var(--grasp-bg);color:var(--grasp);}
+.bg-b{background:var(--beezb-bg);color:var(--beezb);}
+
+@media(max-width:900px){.content{padding:1rem;}.kpi-row{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <span class="header-title">Grasp vs Beezb — Account Comparison</span>
+    <span class="tag tag-g">GRASP</span>
+    <span class="tag tag-b">BEEZB</span>
+    <span class="header-sub">May 22–23, 2026 · 2-day window · All metrics self-computed from raw data</span>
+  </div>
+  <div class="nav">
+    <button class="nav-btn active" onclick="show('overview',this)">Overview</button>
+    <button class="nav-btn" onclick="show('platform',this)">Platform</button>
+    <button class="nav-btn" onclick="show('placement',this)">Placement</button>
+    <button class="nav-btn" onclick="show('age',this)">Age</button>
+    <button class="nav-btn" onclick="show('media',this)">Media Type</button>
+    <button class="nav-btn" onclick="show('device',this)">Device</button>
+  </div>
+</div>
+
+<div class="content">
+
+<!-- ── OVERVIEW ── -->
+<div id="s-overview" class="section active">
+
+  <div class="note">⚠ Both accounts show ROAS below 1x for this 2-day window. Purchases appear to be a secondary conversion — primary campaign goal is Registrations (and Applications for Grasp). ROAS should be interpreted in that context.</div>
+
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-card-head g">GRASP — May 22–23 totals</div>
+      <div class="kpi-grid">
+        <div class="kpi"><div class="kpi-l">Spend</div><div class="kpi-v">$4,095</div></div>
+        <div class="kpi"><div class="kpi-l">Impressions</div><div class="kpi-v">26,640</div></div>
+        <div class="kpi"><div class="kpi-l">Reach</div><div class="kpi-v">21,550</div></div>
+        <div class="kpi"><div class="kpi-l">Clicks</div><div class="kpi-v">1,244</div></div>
+        <div class="kpi"><div class="kpi-l">CPM</div><div class="kpi-v">$153.70</div></div>
+        <div class="kpi"><div class="kpi-l">CTR</div><div class="kpi-v">4.67%</div></div>
+        <div class="kpi"><div class="kpi-l">CPC</div><div class="kpi-v">$3.29</div></div>
+        <div class="kpi"><div class="kpi-l">Purchases</div><div class="kpi-v">22</div><div class="kpi-d">CPP $186.11</div></div>
+        <div class="kpi"><div class="kpi-l">Rev (purch)</div><div class="kpi-v">$417.88</div></div>
+        <div class="kpi hl"><div class="kpi-l">ROAS</div><div class="kpi-v low-roas">0.10x</div><div class="kpi-d">$0.10 per $1 spent</div></div>
+        <div class="kpi hl"><div class="kpi-l">AOV</div><div class="kpi-v">$18.99</div></div>
+        <div class="kpi"><div class="kpi-l">Regs</div><div class="kpi-v">135</div><div class="kpi-d">CPA $30.33</div></div>
+        <div class="kpi"><div class="kpi-l">Apps</div><div class="kpi-v">15</div><div class="kpi-d">CPA $272.97</div></div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-head b">BEEZB — May 22–23 totals</div>
+      <div class="kpi-grid">
+        <div class="kpi"><div class="kpi-l">Spend</div><div class="kpi-v">$3,103</div></div>
+        <div class="kpi"><div class="kpi-l">Impressions</div><div class="kpi-v">27,892</div></div>
+        <div class="kpi"><div class="kpi-l">Reach</div><div class="kpi-v">25,936</div></div>
+        <div class="kpi"><div class="kpi-l">Clicks</div><div class="kpi-v">897</div></div>
+        <div class="kpi"><div class="kpi-l">CPM</div><div class="kpi-v">$111.26</div></div>
+        <div class="kpi"><div class="kpi-l">CTR</div><div class="kpi-v">3.22%</div></div>
+        <div class="kpi"><div class="kpi-l">CPC</div><div class="kpi-v">$3.46</div></div>
+        <div class="kpi"><div class="kpi-l">Purchases</div><div class="kpi-v">18</div><div class="kpi-d">CPP $172.40</div></div>
+        <div class="kpi"><div class="kpi-l">Rev (purch)</div><div class="kpi-v">$495.51</div></div>
+        <div class="kpi hl2"><div class="kpi-l">ROAS</div><div class="kpi-v low-roas">0.16x</div><div class="kpi-d">$0.16 per $1 spent</div></div>
+        <div class="kpi hl2"><div class="kpi-l">AOV</div><div class="kpi-v">$27.53</div></div>
+        <div class="kpi"><div class="kpi-l">Regs</div><div class="kpi-v">205</div><div class="kpi-d">CPA $15.14</div></div>
+        <div class="kpi"><div class="kpi-l">Apps</div><div class="kpi-v" style="color:var(--text3)">—</div><div class="kpi-d">not tracked</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th class="g">GRASP</th>
+          <th class="b">BEEZB</th>
+          <th class="d">Delta (B−G)</th>
+          <th class="d">Winner</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Spend</td><td>$4,094.51</td><td>$3,103.16</td><td class="delta-neu">−$991.35</td><td>—</td></tr>
+        <tr><td>Impressions</td><td>26,640</td><td>27,892</td><td class="delta-pos">+1,252</td><td><span class="badge bg-b">BEEZB</span></td></tr>
+        <tr><td>Reach</td><td>21,550</td><td>25,936</td><td class="delta-pos">+4,386</td><td><span class="badge bg-b">BEEZB</span></td></tr>
+        <tr><td>Clicks</td><td>1,244</td><td>897</td><td class="delta-neg">−347</td><td><span class="badge bg-g">GRASP</span></td></tr>
+        <tr><td>CPM</td><td>$153.70</td><td>$111.26</td><td class="delta-neg">−$42.44</td><td><span class="badge bg-b">BEEZB</span> cheaper</td></tr>
+        <tr><td>CTR</td><td>4.67%</td><td>3.22%</td><td class="delta-neg">−1.45pp</td><td><span class="badge bg-g">GRASP</span></td></tr>
+        <tr><td>CPC</td><td>$3.29</td><td>$3.46</td><td class="delta-pos">+$0.17</td><td><span class="badge bg-g">GRASP</span> cheaper</td></tr>
+        <tr><td>Purchases</td><td>22</td><td>18</td><td class="delta-neg">−4</td><td><span class="badge bg-g">GRASP</span></td></tr>
+        <tr><td>Purchase Revenue</td><td>$417.88</td><td>$495.51</td><td class="delta-pos">+$77.63</td><td><span class="badge bg-b">BEEZB</span></td></tr>
+        <tr><td>CPP (cost per purchase)</td><td>$186.11</td><td>$172.40</td><td class="delta-neg">−$13.71</td><td><span class="badge bg-b">BEEZB</span> cheaper</td></tr>
+        <tr><td><strong>ROAS</strong></td><td class="low-roas">0.10x</td><td class="low-roas">0.16x</td><td class="delta-pos">+0.06x</td><td><span class="badge bg-b">BEEZB</span></td></tr>
+        <tr><td><strong>AOV</strong></td><td>$18.99</td><td>$27.53</td><td class="delta-pos">+$8.54</td><td><span class="badge bg-b">BEEZB</span></td></tr>
+        <tr><td>Registrations</td><td>135</td><td>205</td><td class="delta-pos">+70</td><td><span class="badge bg-b">BEEZB</span></td></tr>
+        <tr><td>CPA Registration</td><td>$30.33</td><td>$15.14</td><td class="delta-neg">−$15.19</td><td><span class="badge bg-b">BEEZB</span> 2× cheaper</td></tr>
+        <tr><td>CVR Click → Reg</td><td>10.85%</td><td>22.85%</td><td class="delta-pos">+12.0pp</td><td><span class="badge bg-b">BEEZB</span></td></tr>
+        <tr><td>Applications submitted</td><td>15</td><td class="na">— not tracked</td><td class="na">n/a</td><td class="na">—</td></tr>
+        <tr><td>CPA Application</td><td>$272.97</td><td class="na">—</td><td class="na">n/a</td><td class="na">—</td></tr>
+        <tr><td>CVR Clk → App</td><td>1.21%</td><td class="na">—</td><td class="na">n/a</td><td class="na">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="insight">
+    <div class="insight-title">Key takeaways — 2-day window</div>
+    <ul>
+      <li><strong>ROAS context:</strong> Both accounts have ROAS well below 1x (Grasp 0.10x, Beezb 0.16x). These campaigns are not direct-response e-commerce — purchases are a secondary outcome. The real efficiency story lives in registrations and applications.</li>
+      <li><strong>Beezb wins on revenue despite fewer purchases:</strong> 18 purchases → $495.51 revenue vs Grasp's 22 purchases → $417.88. Beezb's AOV ($27.53) is 45% higher than Grasp's ($18.99), meaning Beezb attracts higher-value buyers even at lower volume.</li>
+      <li><strong>CPM gap (28%) drives everything:</strong> Beezb pays $111.26 vs Grasp's $153.70. With roughly the same total spend, Beezb gets 5% more impressions, 20% more reach, and converts registrations at 2× lower cost.</li>
+      <li><strong>Registration efficiency is the biggest gap:</strong> Beezb $15.14 CPA Reg vs Grasp $30.33 — and Beezb generates 52% more registrations from 24% less spend.</li>
+      <li><strong>Grasp's advantage:</strong> More raw purchases (22 vs 18), a unique Applications funnel step (15 apps at $273 CPA, 11.1% Reg→App CVR), and a higher CTR (4.67% vs 3.22%).</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ── PLATFORM ── -->
+<div id="s-platform" class="section">
+  <div class="sec-head">Platform breakdown — May 22–23 combined</div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Platform</th>
+          <th class="g">Spend G</th><th class="g">CPM G</th><th class="g">Purch G</th><th class="g">Rev G</th><th class="g">ROAS G</th><th class="g">AOV G</th><th class="g">Regs G</th><th class="g">CPA Reg G</th>
+          <td class="sep"></td>
+          <th class="b">Spend B</th><th class="b">CPM B</th><th class="b">Purch B</th><th class="b">Rev B</th><th class="b">ROAS B</th><th class="b">AOV B</th><th class="b">Regs B</th><th class="b">CPA Reg B</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Facebook</td>
+          <td>$2,924</td><td>$158.45</td><td>11</td><td>$206.15</td><td class="low-roas">0.07x</td><td>$18.74</td><td>93</td><td>$31.44</td>
+          <td class="sep"></td>
+          <td>$1,979</td><td>$113.57</td><td>17</td><td>$475.51</td><td class="win-b">0.24x</td><td class="win-b">$27.97</td><td>140</td><td>$14.14</td>
+        </tr>
+        <tr>
+          <td>Instagram</td>
+          <td>$997</td><td>$183.38</td><td>10</td><td>$191.73</td><td class="win-g">0.19x</td><td class="win-g">$19.17</td><td>30</td><td>$33.22</td>
+          <td class="sep"></td>
+          <td>$1,113</td><td>$108.20</td><td>1</td><td>$20.00</td><td class="low-roas">0.02x</td><td>$20.00</td><td>64</td><td>$17.39</td>
+        </tr>
+        <tr>
+          <td>Audience Network</td>
+          <td>$146</td><td>$58.82</td><td>1</td><td>$20.00</td><td class="low-roas">0.14x</td><td>$20.00</td><td>11</td><td>$13.24</td>
+          <td class="sep"></td>
+          <td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td>
+        </tr>
+        <tr>
+          <td>Threads</td>
+          <td>$19</td><td>$117.53</td><td>0</td><td>—</td><td class="na">—</td><td class="na">—</td><td>0</td><td class="na">—</td>
+          <td class="sep"></td>
+          <td>$8</td><td>$69.92</td><td>0</td><td>—</td><td class="na">—</td><td class="na">—</td><td>0</td><td class="na">—</td>
+        </tr>
+        <tr class="total-row">
+          <td>TOTAL</td>
+          <td>$4,095</td><td>$153.70</td><td>22</td><td>$417.88</td><td class="low-roas">0.10x</td><td>$18.99</td><td>135</td><td>$30.33</td>
+          <td class="sep"></td>
+          <td>$3,103</td><td>$111.26</td><td>18</td><td>$495.51</td><td class="low-roas">0.16x</td><td>$27.53</td><td>205</td><td>$15.14</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="insight">
+    <div class="insight-title">Platform observations</div>
+    <ul>
+      <li><strong>Facebook is Beezb's revenue engine:</strong> $475.51 revenue from 17 purchases at ROAS 0.24x and AOV $27.97 — far outperforming Grasp's Facebook (ROAS 0.07x, $206.15 revenue from 11 purchases). Same platform, very different buyer quality.</li>
+      <li><strong>Instagram reversal — Grasp wins on revenue:</strong> Grasp IG generates $191.73 from 10 purchases (ROAS 0.19x, AOV $19.17) vs Beezb IG's $20.00 from 1 purchase (ROAS 0.02x). Beezb's Instagram gets registrations but barely converts to purchases.</li>
+      <li><strong>Beezb's CPP on Facebook ($116.41) is 2.3× lower than Grasp's ($265.85)</strong>, and Beezb's AOV ($27.97) is 49% higher — so Beezb pays less to acquire buyers who spend more. This is a meaningful quality difference.</li>
+      <li><strong>Grasp's Audience Network (not available for Beezb)</strong> adds low-cost registrations ($13.24 CPA) but poor purchase conversion (1 purchase at ROAS 0.14x, AOV $20).</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ── PLACEMENT ── -->
+<div id="s-placement" class="section">
+  <div class="sec-head">Placement breakdown — May 22–23 combined (spend > $5)</div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Placement</th>
+          <th class="g">Spend G</th><th class="g">CPM G</th><th class="g">Purch G</th><th class="g">ROAS G</th><th class="g">AOV G</th><th class="g">Regs G</th><th class="g">CPA Reg G</th>
+          <td class="sep"></td>
+          <th class="b">Spend B</th><th class="b">CPM B</th><th class="b">Purch B</th><th class="b">ROAS B</th><th class="b">AOV B</th><th class="b">Regs B</th><th class="b">CPA Reg B</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Feed</td>
+          <td>$1,711</td><td>$138.40</td><td>9</td><td class="low-roas">0.10x</td><td>$18.64</td><td>55</td><td>$31.11</td>
+          <td class="sep"></td>
+          <td>$987</td><td>$99.34</td><td>4</td><td class="low-roas">0.08x</td><td>$18.75</td><td>71</td><td>$13.90</td>
+        </tr>
+        <tr>
+          <td>Facebook Reels</td>
+          <td>$977</td><td>$168.32</td><td>4</td><td class="low-roas">0.08x</td><td>$19.55</td><td>35</td><td>$27.93</td>
+          <td class="sep"></td>
+          <td>$1,060</td><td>$118.51</td><td>14</td><td class="win-b">0.40x</td><td class="win-b">$30.04</td><td>84</td><td>$12.62</td>
+        </tr>
+        <tr>
+          <td>Facebook Stories</td>
+          <td>$376</td><td>$514.60</td><td>0</td><td class="na">—</td><td class="na">—</td><td>9</td><td>$41.74</td>
+          <td class="sep"></td>
+          <td>$157</td><td>$310.00</td><td>0</td><td class="na">—</td><td class="na">—</td><td>4</td><td>$39.37</td>
+        </tr>
+        <tr>
+          <td>Instagram Reels</td>
+          <td>$321</td><td>$197.10</td><td>5</td><td class="win-g">0.29x</td><td>$18.80</td><td>9</td><td>$35.65</td>
+          <td class="sep"></td>
+          <td>$377</td><td>$105.65</td><td>0</td><td class="na">—</td><td class="na">—</td><td>18</td><td>$20.92</td>
+        </tr>
+        <tr>
+          <td>Instagram Stories</td>
+          <td>$258</td><td>$240.63</td><td>2</td><td class="low-roas">0.15x</td><td>$18.99</td><td>8</td><td>$32.21</td>
+          <td class="sep"></td>
+          <td>$294</td><td>$110.81</td><td>0</td><td class="na">—</td><td class="na">—</td><td>17</td><td>$17.27</td>
+        </tr>
+        <tr>
+          <td>In-stream Reels</td>
+          <td>$133</td><td>$128.14</td><td>0</td><td class="na">—</td><td class="na">—</td><td>4</td><td>$33.32</td>
+          <td class="sep"></td>
+          <td>$161</td><td>$158.21</td><td>0</td><td class="na">—</td><td class="na">—</td><td>8</td><td>$20.09</td>
+        </tr>
+        <tr>
+          <td>Rewarded Video (AN)</td>
+          <td>$102</td><td>$112.28</td><td>0</td><td class="na">—</td><td class="na">—</td><td>7</td><td>$14.61</td>
+          <td class="sep"></td>
+          <td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td>
+        </tr>
+        <tr>
+          <td>Native/Banner/Interstitial (AN)</td>
+          <td>$43</td><td>$27.69</td><td>1</td><td class="low-roas">0.46x</td><td>$20.00</td><td>4</td><td>$10.82</td>
+          <td class="sep"></td>
+          <td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td>
+        </tr>
+        <tr>
+          <td>Ads on FB Reels</td>
+          <td>$29</td><td>$54.13</td><td>1</td><td class="low-roas">0.68x</td><td>$20.00</td><td>2</td><td>$14.61</td>
+          <td class="sep"></td>
+          <td>$24</td><td>$59.63</td><td>0</td><td class="na">—</td><td class="na">—</td><td>1</td><td>$23.97</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="insight">
+    <div class="insight-title">Placement observations</div>
+    <ul>
+      <li><strong>Facebook Reels is Beezb's best placement on every metric:</strong> ROAS 0.40x, AOV $30.04, 14 purchases at CPP $75.73, 84 regs at $12.62 CPA. Grasp's same placement: ROAS 0.08x, 4 purchases at $244.36 CPP. The same placement performs 5× better on ROAS for Beezb.</li>
+      <li><strong>Instagram Reels is Grasp's best purchase placement:</strong> 5 purchases, ROAS 0.29x — the best ROAS for Grasp across any major placement. Beezb gets 0 purchases from IG Reels despite spending $377.</li>
+      <li><strong>Facebook Stories delivers 0 purchases for both accounts</strong> and has the worst CPA Reg (~$40). With CPMs of $310–$515 and no purchase revenue, both accounts should review whether this placement is worth the cost.</li>
+      <li><strong>Grasp's small AN placements (Native/Banner 0.46x, Ads on FB Reels 0.68x)</strong> are actually the best ROAS among Grasp's placements — but volumes are tiny (1 purchase each). Could be worth testing with more budget.</li>
+      <li><strong>Both accounts' Feed placements</strong> have similar AOV (~$18.75) but Beezb converts registrations much more efficiently ($13.90 vs $31.11 CPA Reg).</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ── AGE ── -->
+<div id="s-age" class="section">
+  <div class="sec-head">Age breakdown — May 22–23 combined</div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Age</th>
+          <th class="g">Spend G</th><th class="g">Sp% G</th><th class="g">Purch G</th><th class="g">Rev G</th><th class="g">ROAS G</th><th class="g">AOV G</th><th class="g">Regs G</th><th class="g">CPA Reg G</th>
+          <td class="sep"></td>
+          <th class="b">Spend B</th><th class="b">Sp% B</th><th class="b">Purch B</th><th class="b">Rev B</th><th class="b">ROAS B</th><th class="b">AOV B</th><th class="b">Regs B</th><th class="b">CPA Reg B</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>18–24</td>
+          <td>$13</td><td>0.3%</td><td>0</td><td>—</td><td class="na">—</td><td class="na">—</td><td>0</td><td class="na">—</td>
+          <td class="sep"></td>
+          <td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td>
+        </tr>
+        <tr>
+          <td>25–34</td>
+          <td>$172</td><td>4.2%</td><td>0</td><td>—</td><td class="na">—</td><td class="na">—</td><td>5</td><td>$34.48</td>
+          <td class="sep"></td>
+          <td>$301</td><td>9.7%</td><td>0</td><td>—</td><td class="na">—</td><td class="na">—</td><td>24</td><td>$12.53</td>
+        </tr>
+        <tr>
+          <td>35–44</td>
+          <td>$399</td><td>9.7%</td><td>2</td><td>$36.99</td><td class="low-roas">0.09x</td><td>$18.50</td><td>3</td><td>$133.07</td>
+          <td class="sep"></td>
+          <td>$703</td><td>22.7%</td><td>2</td><td>$38.99</td><td class="low-roas">0.06x</td><td>$19.50</td><td>49</td><td>$14.34</td>
+        </tr>
+        <tr>
+          <td>45–54</td>
+          <td>$873</td><td>21.3%</td><td>5</td><td>$98.98</td><td class="low-roas">0.11x</td><td>$19.80</td><td>26</td><td>$33.57</td>
+          <td class="sep"></td>
+          <td>$869</td><td>28.0%</td><td>9</td><td>$205.05</td><td class="win-b">0.24x</td><td>$22.78</td><td>56</td><td>$15.51</td>
+        </tr>
+        <tr>
+          <td>55–64</td>
+          <td>$1,369</td><td>33.4%</td><td>8</td><td>$146.95</td><td class="low-roas">0.11x</td><td>$18.37</td><td>48</td><td>$28.52</td>
+          <td class="sep"></td>
+          <td>$803</td><td>25.9%</td><td>5</td><td>$211.47</td><td class="win-b">0.26x</td><td class="win-b">$42.29</td><td>53</td><td>$15.15</td>
+        </tr>
+        <tr>
+          <td>65+</td>
+          <td>$1,268</td><td>30.9%</td><td>7</td><td>$134.96</td><td class="low-roas">0.11x</td><td>$19.28</td><td>52</td><td>$24.39</td>
+          <td class="sep"></td>
+          <td>$428</td><td>13.8%</td><td>2</td><td>$40.00</td><td class="low-roas">0.09x</td><td>$20.00</td><td>23</td><td>$18.62</td>
+        </tr>
+        <tr class="total-row">
+          <td>TOTAL</td>
+          <td>$4,095</td><td>100%</td><td>22</td><td>$417.88</td><td class="low-roas">0.10x</td><td>$18.99</td><td>135</td><td>$30.33</td>
+          <td class="sep"></td>
+          <td>$3,103</td><td>100%</td><td>18</td><td>$495.51</td><td class="low-roas">0.16x</td><td>$27.53</td><td>205</td><td>$15.14</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="insight">
+    <div class="insight-title">Age observations</div>
+    <ul>
+      <li><strong>Beezb's 55–64 has the highest AOV across both accounts: $42.29</strong> — more than 2× Grasp's 55–64 AOV ($18.37). This age band generates $211.47 revenue from only 5 purchases, giving Beezb a ROAS of 0.26x despite spending 40% less than Grasp here.</li>
+      <li><strong>45–54 is Beezb's best revenue age band:</strong> $205.05 from 9 purchases, ROAS 0.24x, AOV $22.78. Grasp's same segment: $98.98 from 5 purchases, ROAS 0.11x. Beezb generates 2× more revenue from the same audience for nearly the same spend.</li>
+      <li><strong>Grasp's AOV is flat across all ages ($18–$20)</strong> — no meaningful variation. Beezb's AOV varies significantly (19.50 for 35–44 up to $42.29 for 55–64), suggesting Beezb is capturing higher-value buyers in older segments.</li>
+      <li><strong>65+ is Grasp's strongest age band on registrations</strong> (52 regs, CPA $24.39) and they spend 3× more here than Beezb. But Beezb's 65+ generates fewer regs at higher CPA ($18.62) — possibly a different funnel/product match for that segment.</li>
+      <li><strong>35–44 registration gap remains extreme:</strong> Beezb $14.34 CPA (49 regs) vs Grasp $133.07 (3 regs). Same purchases (2 each), similar spend. Grasp's creative or landing page fundamentally fails this age group for registrations.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ── MEDIA TYPE ── -->
+<div id="s-media" class="section">
+  <div class="sec-head">Media type — May 22–23</div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Account / Media</th>
+          <th>Spend</th><th>Spend%</th><th>Impressions</th><th>CPM</th><th>CTR</th><th>Purch</th><th>Revenue</th><th>ROAS</th><th>AOV</th><th>CPP</th><th>Regs</th><th>CPA Reg</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="tag tag-g">GRASP</span> Video</td>
+          <td>$3,395.90</td><td>82.9%</td><td>21,301</td><td>$159.42</td><td>5.24%</td><td>19</td><td>$358.90</td><td class="low-roas">0.11x</td><td>$18.89</td><td>$178.73</td><td>121</td><td>$28.07</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-g">GRASP</span> Image</td>
+          <td>$698.61</td><td>17.1%</td><td>5,339</td><td>$130.85</td><td>2.38%</td><td>3</td><td>$58.98</td><td class="low-roas">0.08x</td><td>$19.66</td><td>$232.87</td><td>14</td><td>$49.90</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-b">BEEZB</span> Video</td>
+          <td>$3,103.16</td><td>100%</td><td>27,892</td><td>$111.26</td><td>3.22%</td><td>18</td><td>$495.51</td><td class="win-b">0.16x</td><td class="win-b">$27.53</td><td>$172.40</td><td>205</td><td>$15.14</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-b">BEEZB</span> Image</td>
+          <td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="insight">
+    <div class="insight-title">Media type observations</div>
+    <ul>
+      <li><strong>Beezb Video (0.16x ROAS, AOV $27.53) outperforms both Grasp formats</strong> on revenue efficiency. Grasp Video 0.11x and Grasp Image 0.08x — the Image budget has the worst ROAS of any segment.</li>
+      <li><strong>Grasp Image has a similar AOV ($19.66) to Video ($18.89)</strong> but significantly worse CPP ($232.87 vs $178.73) and CPA Reg ($49.90 vs $28.07). The Image format adds cost without improving buyer quality.</li>
+      <li><strong>Beezb's Video CPM ($111.26) is 30% lower than Grasp's Video ($159.42)</strong> — confirming the CPM gap is audience/placement mix, not format. At the same CPM, Grasp Video would likely match Beezb on ROAS.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ── DEVICE ── -->
+<div id="s-device" class="section">
+  <div class="sec-head">Device breakdown — May 22–23 combined · Both accounts</div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Device</th>
+          <th class="g">Spend G</th><th class="g">Sp% G</th><th class="g">CPM G</th><th class="g">Purch G</th><th class="g">Rev G</th><th class="g">ROAS G</th><th class="g">AOV G</th><th class="g">Regs G</th><th class="g">CPA Reg G</th><th class="g">Apps G</th>
+          <td class="sep"></td>
+          <th class="b">Spend B</th><th class="b">Sp% B</th><th class="b">CPM B</th><th class="b">Purch B</th><th class="b">Rev B</th><th class="b">ROAS B</th><th class="b">AOV B</th><th class="b">Regs B</th><th class="b">CPA Reg B</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>iPhone</td>
+          <td>$2,139</td><td>52.2%</td><td>$178.36</td><td>18</td><td>$338.89</td><td class="low-roas">0.16x</td><td>$18.83</td><td>70</td><td>$30.56</td><td>12</td>
+          <td class="sep"></td>
+          <td>$1,877</td><td>60.5%</td><td>$112.78</td><td>7</td><td>$121.46</td><td class="low-roas">0.06x</td><td>$17.35</td><td>118</td><td>$15.90</td>
+        </tr>
+        <tr>
+          <td>Android Phone</td>
+          <td>$1,694</td><td>41.4%</td><td>$134.19</td><td>4</td><td>$78.99</td><td class="low-roas">0.05x</td><td>$19.75</td><td>58</td><td>$29.20</td><td>3</td>
+          <td class="sep"></td>
+          <td>$1,142</td><td>36.8%</td><td>$108.51</td><td>9</td><td>$221.57</td><td class="win-b">0.19x</td><td class="win-b">$24.62</td><td>80</td><td>$14.27</td>
+        </tr>
+        <tr>
+          <td>iPad</td>
+          <td>$132</td><td>3.2%</td><td>$199.49</td><td>0</td><td>—</td><td class="na">—</td><td class="na">—</td><td>4</td><td>$33.11</td><td>0</td>
+          <td class="sep"></td>
+          <td>$40</td><td>1.3%</td><td>$134.03</td><td>2</td><td>$152.48</td><td style="color:var(--green);font-weight:700;">3.82x</td><td style="color:var(--green);font-weight:700;">$76.24</td><td>4</td><td>$9.98</td>
+        </tr>
+        <tr>
+          <td>Desktop</td>
+          <td>$81</td><td>2.0%</td><td>$94.72</td><td>0</td><td>—</td><td class="na">—</td><td class="na">—</td><td>2</td><td>$40.54</td><td>0</td>
+          <td class="sep"></td>
+          <td>$22</td><td>0.7%</td><td>$98.80</td><td>0</td><td>—</td><td class="na">—</td><td class="na">—</td><td>1</td><td>$22.33</td>
+        </tr>
+        <tr>
+          <td>Android Tablet</td>
+          <td>$28</td><td>0.7%</td><td>$121.86</td><td>0</td><td>—</td><td class="na">—</td><td class="na">—</td><td>0</td><td class="na">—</td><td>0</td>
+          <td class="sep"></td>
+          <td>$10</td><td>0.3%</td><td>$111.96</td><td>0</td><td>—</td><td class="na">—</td><td class="na">—</td><td>0</td><td class="na">—</td>
+        </tr>
+        <tr>
+          <td>Other</td>
+          <td>$21</td><td>0.5%</td><td>$73.93</td><td>0</td><td>—</td><td class="na">—</td><td class="na">—</td><td>1</td><td>$20.70</td><td>0</td>
+          <td class="sep"></td>
+          <td>$12</td><td>0.4%</td><td>$107.28</td><td>0</td><td>—</td><td class="na">—</td><td class="na">—</td><td>2</td><td>$6.11</td>
+        </tr>
+        <tr class="total-row">
+          <td>TOTAL</td>
+          <td>$4,095</td><td>100%</td><td>$153.70</td><td>22</td><td>$417.88</td><td class="low-roas">0.10x</td><td>$18.99</td><td>135</td><td>$30.33</td><td>15</td>
+          <td class="sep"></td>
+          <td>$3,103</td><td>100%</td><td>$111.26</td><td>18</td><td>$495.51</td><td class="low-roas">0.16x</td><td>$27.53</td><td>205</td><td>$15.14</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="insight">
+    <div class="insight-title">Device observations</div>
+    <ul>
+      <li><strong>Beezb iPad is a standout outlier: ROAS 3.82x, AOV $76.24</strong> — only 2 purchases from $39.94 spend, but those buyers spent $152.48 total. Small sample, but worth watching. Grasp's iPad: 0 purchases, 0 revenue from $132 spend.</li>
+      <li><strong>iPhone ROAS is reversed between accounts:</strong> Grasp iPhone 0.16x (18 purchases, $338.89 revenue, AOV $18.83) vs Beezb iPhone 0.06x (7 purchases, $121.46 revenue, AOV $17.35). Grasp clearly converts iPhone users to purchases much better.</li>
+      <li><strong>Android Phone is Beezb's revenue device:</strong> 9 purchases, $221.57 revenue, ROAS 0.19x, AOV $24.62. Grasp's Android: 4 purchases, $78.99 revenue, ROAS 0.05x — 4× worse ROAS on the same device type.</li>
+      <li><strong>For Grasp: iPhone is the right device to invest in</strong> — 82% of revenue, 80% of purchases, 80% of applications. Android generates more clicks but 3.5× worse CPP and 4× worse ROAS.</li>
+      <li><strong>For Beezb: Android is the revenue device</strong> ($221.57 vs $121.46 on iPhone), while iPhone drives more registrations (118 vs 80). The two devices serve different funnel stages for Beezb.</li>
+    </ul>
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<script>
+function show(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('s-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>

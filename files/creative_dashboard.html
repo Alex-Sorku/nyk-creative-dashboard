@@ -1390,10 +1390,17 @@ document.querySelectorAll('.date-preset').forEach(btn => {
   const toEl   = document.getElementById('date-to');
   if (fromEl) { fromEl.min = minD; fromEl.max = maxD; }
   if (toEl)   { toEl.min   = minD; toEl.max = maxD; toEl.value = maxD; }
-  // Fix All preset
+  // Fix All / 7d / 3d presets dynamically from actual data range
   document.querySelectorAll('.date-preset').forEach(btn => {
-    if (btn.textContent.trim() === 'All') {
+    const lbl = btn.textContent.trim();
+    if (lbl === 'All') {
       btn.dataset.from = minD;
+      btn.dataset.to   = maxD;
+    } else if (lbl === '7d' || lbl === '3d') {
+      const back = lbl === '7d' ? 6 : 2;
+      const d = new Date(maxD);
+      d.setUTCDate(d.getUTCDate() - back);
+      btn.dataset.from = d.toISOString().slice(0, 10);
       btn.dataset.to   = maxD;
     }
   });

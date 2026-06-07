@@ -263,10 +263,12 @@ def merge_into(existing, new_rows, id_keys):
 def fetch_amplitude_data(date_from, date_to):
     """
     Query Amplitude for purchase_completed_success events grouped by utm_content.
-    Returns dict: { ad_id: {"amp_pur": int, "amp_rev": float} }
-    utm_content in Amplitude = ad_id in the dashboard.
+    Returns (totals, daily) where:
+      totals: { ad_id: {"amp_pur": int, "amp_rev": float} }
+      daily:  { ad_id: { "YYYY-MM-DD": int } }
     """
-    start = date_from.replace("-", "")   # '2026-05-22' → '20260522'
+    from datetime import date as _date, timedelta as _td
+    start = date_from.replace("-", "")
     end   = date_to.replace("-", "")
     creds = base64.b64encode(f"{AMP_API_KEY}:{AMP_SECRET}".encode()).decode()
     hdrs  = {"Authorization": f"Basic {creds}"}
@@ -281,47 +283,102 @@ def fetch_amplitude_data(date_from, date_to):
             err(f"Amplitude API error: {e}")
             return None
 
-    base_params = {
-        "e":     json.dumps({"event_type": "purchase_completed_success"}),
-        "g":     "utm_content",
-        "start": start,
-        "end":   end,
-        "i":     -300000,   # total across the whole period
-        "limit": 100,       # max groups returned (top 100 by event count)
-    }
-
     log("\nFetching Amplitude data…")
-    resp_count = amp_get({**base_params, "m": "totals"})
-    resp_rev   = amp_get({**base_params, "m": 'formula:PROPSUM("price")'})
+    resp = amp_get({
+        "e":     json.dumps({"event_type": "purchase_completed_success"}),
+        "m":     "uniques",
+        "g":     "gp:utm_content",
+        "start": start, "end": end,
+        "i":     1,
+        "limit": 100,
+    })
 
-    result = {}
-
-    if resp_count and "data" in resp_count:
-        labels = resp_count["data"].get("seriesLabels", [])
-        series = resp_count["data"].get("series",       [])
+    totals = {}
+    daily  = {}
+    if resp and "data" in resp:
+        labels   = resp["data"].get("seriesLabels", [])
+        series   = resp["data"].get("series",       [])
+        start_dt = _date.fromisoformat(date_from)
         for label, vals in zip(labels, series):
-            if not label:
+            if not label or label == "(none)":
                 continue
-            result.setdefault(label, {"amp_pur": 0, "amp_rev": 0.0})
-            result[label]["amp_pur"] = int(vals[0] if vals else 0)
-        ok(f"Amplitude purchases: {len(result)} utm_content values")
+            total = int(sum(vals))
+            if total > 0:
+                totals[str(label)] = {"amp_pur": total, "amp_rev": 0.0}
+            day_map = {}
+            for i, v in enumerate(vals):
+                if v > 0:
+                    day_map[(_date.fromisoformat(date_from) + _td(days=i)).isoformat()] = int(v)
+            if day_map:
+                daily[str(label)] = day_map
+        ok(f"Amplitude purchases: {sum(v['amp_pur'] for v in totals.values())} "
+           f"total across {len(totals)} ads")
     else:
         info("Amplitude purchase count unavailable — amp_pur will be 0")
 
-    if resp_rev and "data" in resp_rev:
-        labels = resp_rev["data"].get("seriesLabels", [])
-        series = resp_rev["data"].get("series",       [])
-        for label, vals in zip(labels, series):
-            if not label:
-                continue
-            result.setdefault(label, {"amp_pur": 0, "amp_rev": 0.0})
-            result[label]["amp_rev"] = round(float(vals[0] if vals else 0.0), 2)
-        ok(f"Amplitude revenue: fetched for {len(result)} ads")
-    else:
-        info("Amplitude revenue unavailable — amp_rev will be 0")
+    return totals, daily
 
+
+# ─── Rebuild RAW_ADS totals from all RAW_DAILY rows ───────────────────────────
+def rebuild_ads_from_daily(daily_rows, meta_map):
+    """
+    Recompute per-ad totals by summing every RAW_DAILY row for each ad.
+    meta_map: dict of ad_id → existing ad dict (for name/agency/des/etc).
+    This ensures RAW_ADS is always consistent with RAW_DAILY regardless of
+    which days were processed in which update run.
+    """
+    acc = {}
+    for row in daily_rows:
+        aid = row["ad_id"]
+        if aid not in acc:
+            acc[aid] = dict(spend=0,imp=0,clk=0,pur=0,reg=0,rev=0,hw=0.0,hi=0,ldw=0.0,li=0)
+        d   = acc[aid]
+        imp = row.get("imp") or 0
+        hk  = row.get("hook")
+        hl  = row.get("hold")
+        d["spend"] += row.get("spend") or 0
+        d["imp"]   += imp
+        d["clk"]   += row.get("clk")  or 0
+        d["pur"]   += row.get("pur")  or 0
+        d["reg"]   += row.get("reg")  or 0
+        d["rev"]   += row.get("rev")  or 0
+        if hk is not None and imp > 0:
+            d["hw"] += hk * imp; d["hi"] += imp
+        if hl is not None and imp > 0:
+            d["ldw"] += hl * imp; d["li"] += imp
+
+    result = []
+    for aid, d in acc.items():
+        meta = meta_map.get(aid, {})
+        sp=d["spend"]; imp=d["imp"]; clk=d["clk"]; pur=d["pur"]; reg=d["reg"]
+        hook = round(d["hw"]/d["hi"],4)   if d["hi"] else None
+        hold = round(d["ldw"]/d["li"],4)  if d["li"] else None
+        result.append({
+            "id": aid,
+            "spend": round(sp,2), "imp": imp, "clk": clk, "pur": pur, "reg": reg,
+            "rev": round(d["rev"],2),
+            "cpm":   round(sp/imp*1000,2) if imp else None,
+            "ctr":   round(clk/imp*100,3) if imp else None,
+            "cpp":   round(sp/pur,2)      if pur else None,
+            "cpreg": round(sp/reg,2)      if reg else None,
+            "r_lc":  round(reg/clk,4)    if clk else None,
+            "p_reg": round(pur/reg,4)    if reg else None,
+            "p_lc":  round(pur/clk,4)   if clk else None,
+            "hook": hook, "hold": hold, "sp_share": None,
+            "name":      meta.get("name",""),
+            "agency":    meta.get("agency",""),
+            "des":       meta.get("des",""),
+            "typ":       meta.get("typ",""),
+            "ver":       meta.get("ver",""),
+            "utrcncp":   meta.get("utrcncp",""),
+            "s3":        meta.get("s3",""),
+            "v3s":       meta.get("v3s",""),
+            "creative_url": meta.get("creative_url",""),
+            "amp_pur":   0,
+            "amp_rev":   0.0,
+            "amp_cpp":   None,
+        })
     return result
-
 
 # ─── Rebuild RAW_DES from RAW_ADS ─────────────────────────────────────────────
 def rebuild_des(ads):
@@ -454,6 +511,19 @@ def update_date_picker(html, all_days):
     if m:
         new_lbl = fmt_day(last)
         html = html[:m.start(1)] + new_lbl + html[m.end(1):]
+    # "7d" and "3d" preset buttons — always relative to the last data day
+    from datetime import date as _date, timedelta as _td
+    last_date = _date.fromisoformat(last)
+    d7_from = (last_date - _td(days=6)).isoformat()
+    d3_from = (last_date - _td(days=2)).isoformat()
+    html = re.sub(
+        r'(<button class="date-preset"[^>]*data-from=")[^"]*("[^>]*data-to=")[^"]*("[^>]*>7d<)',
+        r'\g<1>' + d7_from + r'\2' + last + r'\3', html
+    )
+    html = re.sub(
+        r'(<button class="date-preset"[^>]*data-from=")[^"]*("[^>]*data-to=")[^"]*("[^>]*>3d<)',
+        r'\g<1>' + d3_from + r'\2' + last + r'\3', html
+    )
     # JS initial state
     html = re.sub(r"(dateFrom:\s*')[^']*(')", r'\g<1>' + first + r'\2', html)
     html = re.sub(r"(dateTo:\s*')[^']*(')",   r'\g<1>' + last  + r'\2', html)
@@ -584,10 +654,18 @@ def main():
 
     # 4. Merge into existing arrays
     log("\nMerging data…")
-    merged_ads   = merge_into(existing_ads,   new_ads_rows,   ["id"])
+    # Age, place, daily: merge by key (append new keys only)
     merged_age   = merge_into(existing_age,   new_age_rows,   ["ad_id","age"])
     merged_place = merge_into(existing_place, new_place_rows, ["ad_id","place"])
     merged_daily = merge_into(existing_daily, new_daily_rows, ["ad_id","day"])
+
+    # Ads: rebuild totals from all RAW_DAILY to keep in sync across update runs.
+    # Metadata (name, agency, des, etc.) comes from existing_ads + new_ads_rows.
+    meta_map = {a["id"]: a for a in existing_ads}
+    for r in new_ads_rows:
+        if r["id"] not in meta_map:
+            meta_map[r["id"]] = r  # register new ads
+    merged_ads = rebuild_ads_from_daily(merged_daily, meta_map)
 
     ok(f"ads={len(merged_ads)} (+{len(merged_ads)-len(existing_ads)}), "
        f"age={len(merged_age)} (+{len(merged_age)-len(existing_age)}), "
@@ -598,11 +676,11 @@ def main():
     all_days_sorted = sorted(set(r["day"] for r in merged_daily))
     amp_date_from   = all_days_sorted[0]  if all_days_sorted else "2026-05-22"
     amp_date_to     = all_days_sorted[-1] if all_days_sorted else datetime.now().strftime("%Y-%m-%d")
-    amp_data        = fetch_amplitude_data(amp_date_from, amp_date_to)
+    amp_totals, amp_daily = fetch_amplitude_data(amp_date_from, amp_date_to)
 
     amp_injected = 0
     for ad in merged_ads:
-        amp = amp_data.get(ad["id"], {})
+        amp = amp_totals.get(ad["id"], {})
         ad["amp_pur"] = amp.get("amp_pur", 0)
         ad["amp_rev"] = amp.get("amp_rev", 0.0)
         ad["amp_cpp"] = round(ad["spend"] / ad["amp_pur"], 2) if ad.get("amp_pur") else None
@@ -610,10 +688,19 @@ def main():
             amp_injected += 1
     ok(f"Amplitude data injected into {amp_injected}/{len(merged_ads)} ads")
 
+    # Inject daily amp_pur into merged_daily rows (used by charts)
+    daily_inj = 0
+    for row in merged_daily:
+        v = amp_daily.get(row["ad_id"], {}).get(row["day"], 0)
+        row["amp_pur"] = v
+        row["amp_cpp"] = round(row["spend"] / v, 2) if v and row.get("spend") else None
+        if v: daily_inj += 1
+    ok(f"Daily amp_pur injected into {daily_inj}/{len(merged_daily)} daily rows")
+
     # Save Amplitude snapshot for reference
     amp_snap_path = BASE / "data" / "amplitude_data.json"
-    amp_snap_path.write_text(json.dumps(amp_data, indent=2))
-    ok(f"Amplitude snapshot → data/amplitude_data.json ({len(amp_data)} entries)")
+    amp_snap_path.write_text(json.dumps(amp_totals, indent=2))
+    ok(f"Amplitude snapshot → data/amplitude_data.json ({len(amp_totals)} entries)")
 
     merged_des = rebuild_des(merged_ads)
 

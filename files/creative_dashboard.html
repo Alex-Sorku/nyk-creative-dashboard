@@ -215,8 +215,10 @@ td:first-child{text-align:left;font-family:'DM Sans',sans-serif;font-size:11px;c
 <!-- Stats pills -->
 <div class="stats" id="stats-bar">
   <div class="stat-card"><div class="stat-label">Total Spend</div><div class="stat-val" id="s-spend">—</div></div>
-  <div class="stat-card"><div class="stat-label">Purchases</div><div class="stat-val" id="s-purch">—</div></div>
+  <div class="stat-card"><div class="stat-label">Purchases (Meta)</div><div class="stat-val" id="s-purch">—</div></div>
   <div class="stat-card"><div class="stat-label">Cost per Purchase</div><div class="stat-val" id="s-cpp">—</div></div>
+  <div class="stat-card" style="border-top:2px solid #6741d9"><div class="stat-label">Amp Purchases</div><div class="stat-val" id="s-ampur">—</div></div>
+  <div class="stat-card" style="border-top:2px solid #6741d9"><div class="stat-label">Cost / Amp Pur</div><div class="stat-val" id="s-amcpp">—</div></div>
   <div class="stat-card"><div class="stat-label">Registrations</div><div class="stat-val" id="s-reg">—</div></div>
   <div class="stat-card"><div class="stat-label">Cost per Reg</div><div class="stat-val" id="s-cpreg">—</div></div>
   <div class="stat-card"><div class="stat-label">Active Ads</div><div class="stat-val" id="s-ads">—</div></div>
@@ -239,6 +241,8 @@ td:first-child{text-align:left;font-family:'DM Sans',sans-serif;font-size:11px;c
         <th data-tbl="t1" data-col="spend">Spend</th>
         <th data-tbl="t1" data-col="pur">Purchases</th>
         <th data-tbl="t1" data-col="cpp">CPP</th>
+        <th data-tbl="t1" data-col="amp_pur" title="Amplitude: purchase_completed_success events (utm_content = Ad ID)" style="color:#6741d9">Amp Pur</th>
+        <th data-tbl="t1" data-col="amp_cpp" title="Spend ÷ Amplitude Purchases" style="color:#6741d9">Cost/Amp Pur</th>
         <th data-tbl="t1" data-col="hook">3s Hook</th>
         <th data-tbl="t1" data-col="hold">Hold Rate</th>
         <th data-tbl="t1" data-col="ctr">CTR</th>
@@ -302,6 +306,8 @@ td:first-child{text-align:left;font-family:'DM Sans',sans-serif;font-size:11px;c
         <th data-tbl="t2" data-col="spend">Spend</th>
         <th data-tbl="t2" data-col="pur">Purch</th>
         <th data-tbl="t2" data-col="cpp">CPP</th>
+        <th data-tbl="t2" data-col="amp_pur" title="Amplitude: purchase_completed_success events (utm_content = Ad ID)" style="color:#6741d9">Amp Pur</th>
+        <th data-tbl="t2" data-col="amp_cpp" title="Spend ÷ Amplitude Purchases" style="color:#6741d9">Cost/Amp Pur</th>
         <th data-tbl="t2" data-col="hook">3s Hook</th>
         <th data-tbl="t2" data-col="hold">Hold</th>
         <th data-tbl="t2" data-col="cpm">CPM</th>
@@ -589,6 +595,7 @@ function computeAdsView() {
         des: meta.des||'', typ: meta.typ||'', ver: meta.ver||'',
         utrcncp: meta.utrcncp||'', s3: meta.s3||'', v3s: meta.v3s||'',
         creative_url: meta.creative_url||'',
+        amp_pur: meta.amp_pur||0, amp_rev: meta.amp_rev||0,
         spend:0, imp:0, clk:0, pur:0, reg:0, rev:0,
         _hw:0, _hi:0, _ldw:0, _li:0, sp_share:null
       };
@@ -604,14 +611,16 @@ function computeAdsView() {
     const sp=d.spend, imp=d.imp, clk=d.clk, pur=d.pur, reg=d.reg;
     const hook = d._hi  ? d._hw  / d._hi  : null;
     const hold = d._li  ? d._ldw / d._li  : null;
+    const amp_pur = d.amp_pur||0;
     return { ...d, reach:null,
-      cpm:  imp ? sp/imp*1000 : null,
-      ctr:  imp ? clk/imp*100 : null,
-      cpp:  pur ? sp/pur      : null,
-      cpreg:reg ? sp/reg      : null,
-      r_lc: clk ? reg/clk     : null,
-      p_reg:reg ? pur/reg     : null,
-      p_lc: clk ? pur/clk     : null,
+      cpm:     imp     ? sp/imp*1000  : null,
+      ctr:     imp     ? clk/imp*100  : null,
+      cpp:     pur     ? sp/pur       : null,
+      cpreg:   reg     ? sp/reg       : null,
+      r_lc:    clk     ? reg/clk      : null,
+      p_reg:   reg     ? pur/reg      : null,
+      p_lc:    clk     ? pur/clk      : null,
+      amp_cpp: amp_pur ? sp/amp_pur   : null,
       hook, hold
     };
   });
@@ -624,16 +633,19 @@ function filteredAds(ids){
 
 // ═══════════════════════════ AGGREGATION ════════════════════
 function aggAds(ads){
-  const tot={spend:0,imp:0,reach:0,clk:0,pur:0,reg:0,rev:0,hw:0,hi:0,ldw:0,li:0};
+  const tot={spend:0,imp:0,reach:0,clk:0,pur:0,reg:0,rev:0,amp_pur:0,hw:0,hi:0,ldw:0,li:0};
   for(const a of ads){
     tot.spend+=a.spend||0; tot.imp+=a.imp||0; tot.reach+=a.reach||0;
     tot.clk+=a.clk||0; tot.pur+=a.pur||0; tot.reg+=a.reg||0; tot.rev+=a.rev||0;
+    tot.amp_pur+=a.amp_pur||0;
     if(a.hook!=null&&a.imp>0){tot.hw+=a.hook*a.imp; tot.hi+=a.imp;}
     if(a.hold!=null&&a.imp>0){tot.ldw+=a.hold*a.imp; tot.li+=a.imp;}
   }
-  const sp=tot.spend,imp=tot.imp,clk=tot.clk,pur=tot.pur,reg=tot.reg;
+  const sp=tot.spend,imp=tot.imp,clk=tot.clk,pur=tot.pur,reg=tot.reg,amp_pur=tot.amp_pur;
   return {
     spend:sp,imp,reach:tot.reach,clk,pur,reg,rev:tot.rev,
+    amp_pur,
+    amp_cpp:amp_pur?sp/amp_pur:null,
     cpm:imp?sp/imp*1000:null,
     ctr:imp?clk/imp*100:null,
     cpp:pur?sp/pur:null,
@@ -724,6 +736,8 @@ function renderT1(){
       <td>${money2(r.spend)}</td>
       <td>${r.pur||0}</td>
       <td class="${cppCls(r.cpp)}">${money2(r.cpp)}</td>
+      <td style="color:#6741d9;font-weight:600">${r.amp_pur||0}</td>
+      <td class="${cppCls(r.amp_cpp)}">${money2(r.amp_cpp)}</td>
       <td class="${hookCls(r.hook)}">${pct(r.hook)}</td>
       <td class="${hookCls(r.hold)}">${pct(r.hold)}</td>
       <td>${r.ctr!=null?(r.ctr.toFixed(2)+'%'):'—'}</td>
@@ -743,6 +757,8 @@ function renderT1(){
     <td>${money2(sumR.spend)}</td>
     <td>${sumR.pur||0}</td>
     <td class="${cppCls(sumR.cpp)}">${money2(sumR.cpp)}</td>
+    <td style="color:#6741d9;font-weight:600">${sumR.amp_pur||0}</td>
+    <td class="${cppCls(sumR.amp_cpp)}">${money2(sumR.amp_cpp)}</td>
     <td class="${hookCls(sumR.hook)}">${pct(sumR.hook)}</td>
     <td class="${hookCls(sumR.hold)}">${pct(sumR.hold)}</td>
     <td>${sumR.ctr!=null?(sumR.ctr.toFixed(2)+'%'):'—'}</td>
@@ -795,6 +811,8 @@ function renderT2(){
       <td>${money2(a.spend)}</td>
       <td>${a.pur||0}</td>
       <td class="${cppCls(a.cpp)}">${money2(a.cpp)}</td>
+      <td style="color:#6741d9;font-weight:600">${a.amp_pur||0}</td>
+      <td class="${cppCls(a.amp_cpp)}">${money2(a.amp_cpp)}</td>
       <td class="${hookCls(a.hook)}">${pct(a.hook)}</td>
       <td class="${hookCls(a.hold)}">${pct(a.hold)}</td>
       <td>${a.cpm!=null?'$'+a.cpm.toFixed(2):'—'}</td>
@@ -816,6 +834,8 @@ function renderT2(){
     <td>${money2(sumA.spend)}</td>
     <td>${sumA.pur}</td>
     <td class="${cppCls(sumA.cpp)}">${money2(sumA.cpp)}</td>
+    <td style="color:#6741d9;font-weight:600">${sumA.amp_pur||0}</td>
+    <td class="${cppCls(sumA.amp_cpp)}">${money2(sumA.amp_cpp)}</td>
     <td class="${hookCls(sumA.hook)}">${pct(sumA.hook)}</td>
     <td class="${hookCls(sumA.hold)}">${pct(sumA.hold)}</td>
     <td>${sumA.cpm!=null?'$'+sumA.cpm.toFixed(2):'—'}</td>
@@ -986,17 +1006,20 @@ function renderT4(){
 
 // ═══════════════════════════ STATS ══════════════════════════
 function renderStats(){
-  const ids = activeAdIds();
-  const ads = filteredAds(ids);
-  const sp  = ads.reduce((s,a)=>s+(a.spend||0),0);
-  const pur = ads.reduce((s,a)=>s+(a.pur||0),0);
-  const reg = ads.reduce((s,a)=>s+(a.reg||0),0);
-  $('s-spend').textContent = '$'+Math.round(sp).toLocaleString();
-  $('s-purch').textContent = pur.toLocaleString();
-  $('s-cpp').textContent   = pur ? '$'+Math.round(sp/pur) : '—';
-  $('s-reg').textContent   = reg.toLocaleString();
-  $('s-cpreg').textContent = reg ? '$'+Math.round(sp/reg) : '—';
-  $('s-ads').textContent   = ads.length;
+  const ids    = activeAdIds();
+  const ads    = filteredAds(ids);
+  const sp     = ads.reduce((s,a)=>s+(a.spend||0),0);
+  const pur    = ads.reduce((s,a)=>s+(a.pur||0),0);
+  const reg    = ads.reduce((s,a)=>s+(a.reg||0),0);
+  const ampPur = ads.reduce((s,a)=>s+(a.amp_pur||0),0);
+  $('s-spend').textContent  = '$'+Math.round(sp).toLocaleString();
+  $('s-purch').textContent  = pur.toLocaleString();
+  $('s-cpp').textContent    = pur    ? '$'+Math.round(sp/pur)    : '—';
+  $('s-ampur').textContent  = ampPur.toLocaleString();
+  $('s-amcpp').textContent  = ampPur ? '$'+Math.round(sp/ampPur) : '—';
+  $('s-reg').textContent    = reg.toLocaleString();
+  $('s-cpreg').textContent  = reg    ? '$'+Math.round(sp/reg)    : '—';
+  $('s-ads').textContent    = ads.length;
 }
 
 // ═══════════════════════════ BADGES / CTX ═══════════════════

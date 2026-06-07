@@ -11,9 +11,11 @@ Usage:
 Drop new Ads Manager CSV exports into the raw/ folder, then run this.
 The script will:
   1. Detect new creative CSV files (Age + Platform, Grasp + BeezB)
-  2. Merge them into files/creative_dashboard.html
-  3. Push the updated HTML to GitHub Pages
-  4. Move processed files to processed/
+  2. Fetch purchase data from Amplitude (purchase_completed_success,
+     grouped by utm_content = ad_id)
+  3. Merge everything into files/creative_dashboard.html
+  4. Push the updated HTML to GitHub Pages
+  5. Move processed files to processed/
 ───────────────────────────────────────────────────────────────────
 """
 
@@ -25,8 +27,16 @@ import shutil
 import subprocess
 import collections
 import hashlib
+import base64
+import urllib.request
+import urllib.parse
 from pathlib import Path
 from datetime import datetime
+
+# ─── Amplitude credentials ────────────────────────────────────────────────────
+AMP_API_KEY = "64cb613a6e1bf9df7c5483b8a4ac4bd6"
+AMP_SECRET  = "2433f8892d713db9c049926a819525b3"
+AMP_SEG_URL = "https://amplitude.com/api/2/events/segmentation"
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
 BASE     = Path(__file__).parent
@@ -249,16 +259,83 @@ def merge_into(existing, new_rows, id_keys):
 
     return merged
 
+# ─── Amplitude: fetch purchase counts + revenue grouped by utm_content ────────
+def fetch_amplitude_data(date_from, date_to):
+    """
+    Query Amplitude for purchase_completed_success events grouped by utm_content.
+    Returns dict: { ad_id: {"amp_pur": int, "amp_rev": float} }
+    utm_content in Amplitude = ad_id in the dashboard.
+    """
+    start = date_from.replace("-", "")   # '2026-05-22' → '20260522'
+    end   = date_to.replace("-", "")
+    creds = base64.b64encode(f"{AMP_API_KEY}:{AMP_SECRET}".encode()).decode()
+    hdrs  = {"Authorization": f"Basic {creds}"}
+
+    def amp_get(params):
+        url = AMP_SEG_URL + "?" + urllib.parse.urlencode(params)
+        req = urllib.request.Request(url, headers=hdrs)
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:
+                return json.loads(r.read())
+        except Exception as e:
+            err(f"Amplitude API error: {e}")
+            return None
+
+    base_params = {
+        "e":     json.dumps({"event_type": "purchase_completed_success"}),
+        "g":     "utm_content",
+        "start": start,
+        "end":   end,
+        "i":     -300000,   # total across the whole period
+        "limit": 100,       # max groups returned (top 100 by event count)
+    }
+
+    log("\nFetching Amplitude data…")
+    resp_count = amp_get({**base_params, "m": "totals"})
+    resp_rev   = amp_get({**base_params, "m": 'formula:PROPSUM("price")'})
+
+    result = {}
+
+    if resp_count and "data" in resp_count:
+        labels = resp_count["data"].get("seriesLabels", [])
+        series = resp_count["data"].get("series",       [])
+        for label, vals in zip(labels, series):
+            if not label:
+                continue
+            result.setdefault(label, {"amp_pur": 0, "amp_rev": 0.0})
+            result[label]["amp_pur"] = int(vals[0] if vals else 0)
+        ok(f"Amplitude purchases: {len(result)} utm_content values")
+    else:
+        info("Amplitude purchase count unavailable — amp_pur will be 0")
+
+    if resp_rev and "data" in resp_rev:
+        labels = resp_rev["data"].get("seriesLabels", [])
+        series = resp_rev["data"].get("series",       [])
+        for label, vals in zip(labels, series):
+            if not label:
+                continue
+            result.setdefault(label, {"amp_pur": 0, "amp_rev": 0.0})
+            result[label]["amp_rev"] = round(float(vals[0] if vals else 0.0), 2)
+        ok(f"Amplitude revenue: fetched for {len(result)} ads")
+    else:
+        info("Amplitude revenue unavailable — amp_rev will be 0")
+
+    return result
+
+
 # ─── Rebuild RAW_DES from RAW_ADS ─────────────────────────────────────────────
 def rebuild_des(ads):
     dm = collections.defaultdict(lambda: {
         "spend":0,"imp":0,"clk":0,"pur":0,"reg":0,"rev":0,
+        "amp_pur":0,"amp_rev":0.0,
         "hw":0,"hi":0,"ldw":0,"li":0,"agencies":set(),
     })
     for a in ads:
         d = dm[a["des"]]
         for f in ["spend","imp","clk","pur","reg","rev"]:
             d[f] += a.get(f) or 0
+        d["amp_pur"] += a.get("amp_pur") or 0
+        d["amp_rev"] += a.get("amp_rev") or 0.0
         d["agencies"].add(a["agency"])
         if a.get("hook") and a.get("imp"):
             d["hw"] += a["hook"] * a["imp"]; d["hi"] += a["imp"]
@@ -268,9 +345,12 @@ def rebuild_des(ads):
     result = []
     for des, d in dm.items():
         sp=d["spend"]; imp=d["imp"]; clk=d["clk"]; pur=d["pur"]; reg=d["reg"]
+        amp_pur=d["amp_pur"]
         result.append({
             "des": des, "spend": round(sp,2), "imp": imp, "clk": clk,
             "pur": pur, "reg": reg, "rev": round(d["rev"],2),
+            "amp_pur": amp_pur, "amp_rev": round(d["amp_rev"],2),
+            "amp_cpp": round(sp/amp_pur,2) if amp_pur else None,
             "cpm":   round(sp/imp*1000,2) if imp else None,
             "ctr":   round(clk/imp*100,3) if imp else None,
             "cpp":   round(sp/pur,2)       if pur else None,
@@ -508,12 +588,34 @@ def main():
     merged_age   = merge_into(existing_age,   new_age_rows,   ["ad_id","age"])
     merged_place = merge_into(existing_place, new_place_rows, ["ad_id","place"])
     merged_daily = merge_into(existing_daily, new_daily_rows, ["ad_id","day"])
-    merged_des   = rebuild_des(merged_ads)
 
     ok(f"ads={len(merged_ads)} (+{len(merged_ads)-len(existing_ads)}), "
        f"age={len(merged_age)} (+{len(merged_age)-len(existing_age)}), "
        f"place={len(merged_place)} (+{len(merged_place)-len(existing_place)}), "
        f"daily={len(merged_daily)} (+{len(merged_daily)-len(existing_daily)})")
+
+    # 4b. Fetch Amplitude purchase data and inject into ads
+    all_days_sorted = sorted(set(r["day"] for r in merged_daily))
+    amp_date_from   = all_days_sorted[0]  if all_days_sorted else "2026-05-22"
+    amp_date_to     = all_days_sorted[-1] if all_days_sorted else datetime.now().strftime("%Y-%m-%d")
+    amp_data        = fetch_amplitude_data(amp_date_from, amp_date_to)
+
+    amp_injected = 0
+    for ad in merged_ads:
+        amp = amp_data.get(ad["id"], {})
+        ad["amp_pur"] = amp.get("amp_pur", 0)
+        ad["amp_rev"] = amp.get("amp_rev", 0.0)
+        ad["amp_cpp"] = round(ad["spend"] / ad["amp_pur"], 2) if ad.get("amp_pur") else None
+        if ad["amp_pur"]:
+            amp_injected += 1
+    ok(f"Amplitude data injected into {amp_injected}/{len(merged_ads)} ads")
+
+    # Save Amplitude snapshot for reference
+    amp_snap_path = BASE / "data" / "amplitude_data.json"
+    amp_snap_path.write_text(json.dumps(amp_data, indent=2))
+    ok(f"Amplitude snapshot → data/amplitude_data.json ({len(amp_data)} entries)")
+
+    merged_des = rebuild_des(merged_ads)
 
     # 5. Patch dashboard HTML
     log("\nPatching dashboard HTML…")

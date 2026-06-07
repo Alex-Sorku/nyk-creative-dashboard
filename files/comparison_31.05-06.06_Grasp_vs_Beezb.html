@@ -11,8 +11,8 @@
   --bg:#f8f9fa;--bg2:#fff;--bg3:#f1f3f5;--border:#dee2e6;--border2:#ced4da;
   --text:#1a1d23;--text2:#495057;--text3:#868e96;
   --red:#e03131;--green:#2f9e44;--amber:#e67700;--blue:#1971c2;
-  --grasp:#1971c2;--beezb:#6741d9;
-  --grasp-bg:#e8f4fd;--beezb-bg:#f3f0ff;
+  --grasp:#2f9e44;--beezb:#f76707;
+  --grasp-bg:#ebfbee;--beezb-bg:#fff4e6;
   --shadow:0 1px 3px rgba(0,0,0,0.08);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -28,8 +28,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .nav-btn{font-family:'DM Mono',monospace;font-size:11px;padding:4px 12px;border:1px solid var(--border2);border-radius:4px;background:#fff;color:var(--text2);cursor:pointer;transition:all .15s;}
 .nav-btn:hover{border-color:var(--blue);color:var(--blue);}
 .nav-btn.active{background:var(--blue);border-color:var(--blue);color:#fff;}
-.nav-btn.cumulative{background:#fff;border-color:#2f9e44;color:#2f9e44;}
-.nav-btn.cumulative.active{background:#2f9e44;border-color:#2f9e44;color:#fff;}
+.nav-btn.cumulative{background:#fff;border-color:var(--text3);color:var(--text3);}
+.nav-btn.cumulative.active{background:#495057;border-color:#495057;color:#fff;}
 .content{max-width:1500px;margin:0 auto;padding:1.5rem 2rem 4rem;}
 .section{display:none;}.section.active{display:block;}
 .sec-head{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:1rem;padding-bottom:6px;border-bottom:1px solid var(--border);}
@@ -788,7 +788,7 @@ function makeChart(id, gData, bData, unit, suggestedMax, labels) {
     type: 'line',
     data: {
       labels: labels || LABELS,
-      datasets: [ds('Grasp', gData, '#1971c2'), ds('Beezb', bData, '#6741d9')]
+      datasets: [ds('Grasp', gData, '#2f9e44'), ds('Beezb', bData, '#f76707')]
     },
     options: {
       responsive: true, maintainAspectRatio: true,
@@ -830,8 +830,8 @@ function buildCharts() {
     data: {
       labels: LABELS,
       datasets: [
-        { label:'Grasp', data: G.spend, backgroundColor:'#1971c220', borderColor:'#1971c2', borderWidth:2 },
-        { label:'Beezb', data: B.spend, backgroundColor:'#6741d920', borderColor:'#6741d9', borderWidth:2 },
+        { label:'Grasp', data: G.spend, backgroundColor:'#2f9e4420', borderColor:'#2f9e44', borderWidth:2 },
+        { label:'Beezb', data: B.spend, backgroundColor:'#f7670720', borderColor:'#f76707', borderWidth:2 },
       ]
     },
     options: {
@@ -860,8 +860,8 @@ function buildCumCharts() {
     data: {
       labels: CUM_LABELS,
       datasets: [
-        { label:'Grasp', data: CUM_G.spend, backgroundColor:'#1971c220', borderColor:'#1971c2', borderWidth:2 },
-        { label:'Beezb', data: CUM_B.spend, backgroundColor:'#6741d920', borderColor:'#6741d9', borderWidth:2 },
+        { label:'Grasp', data: CUM_G.spend, backgroundColor:'#2f9e4420', borderColor:'#2f9e44', borderWidth:2 },
+        { label:'Beezb', data: CUM_B.spend, backgroundColor:'#f7670720', borderColor:'#f76707', borderWidth:2 },
       ]
     },
     options: {

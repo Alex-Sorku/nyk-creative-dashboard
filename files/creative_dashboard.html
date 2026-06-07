@@ -592,7 +592,7 @@ function computeAdsView() {
         des: meta.des||'', typ: meta.typ||'', ver: meta.ver||'',
         utrcncp: meta.utrcncp||'', s3: meta.s3||'', v3s: meta.v3s||'',
         creative_url: meta.creative_url||'',
-        amp_pur: meta.amp_pur||0, amp_rev: meta.amp_rev||0,
+        amp_pur: 0, amp_rev: 0,
         spend:0, imp:0, clk:0, pur:0, reg:0, rev:0,
         _hw:0, _hi:0, _ldw:0, _li:0, sp_share:null
       };
@@ -601,6 +601,7 @@ function computeAdsView() {
     d.spend += r.spend||0; d.imp += r.imp||0;
     d.clk   += r.clk||0;  d.pur  += r.pur||0;
     d.reg   += r.reg||0;  d.rev  += r.rev||0;
+    d.amp_pur += r.amp_pur||0;
     if (r.hook != null && r.imp > 0) { d._hw  += r.hook * r.imp; d._hi  += r.imp; }
     if (r.hold != null && r.imp > 0) { d._ldw += r.hold * r.imp; d._li  += r.imp; }
   }

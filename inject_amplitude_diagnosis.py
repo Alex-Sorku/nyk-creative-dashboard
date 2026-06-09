@@ -200,25 +200,29 @@ for r in y_grasp:
 ok(f"Grasp yesterday: {len(y_grasp)} rows — spend=${sp:.2f} imp={imp} clk={clk} pur={pur} reg={reg}")
 
 amp = D['period_totals'].get(yk, {}).get('amp_pur', 0) or 0
-D['period_totals'][yk] = {
-    "spend":       round(sp, 2),
-    "impressions": imp,
-    "reach":       imp,
-    "link_clicks": clk,
-    "apps":        pur,
-    "regs":        reg,
-    "amp_pur":     amp,
-    "CPM":         round(sp / imp * 1000, 2) if imp  else None,
-    "CPP":         round(sp / pur,        2) if pur  else None,
-    "CTR":         round(clk / imp * 100,  4) if imp  else None,
-    "CPC":         round(sp / clk,         2) if clk  else None,
-    "CPA_app":     round(sp / pur,         2) if pur  else None,
-    "CPA_reg":     round(sp / reg,         2) if reg  else None,
-    "CPA_amp_pur": round(sp / amp,         2) if amp  else None,
-    "CVR_cr":      round(reg / clk * 100,  4) if clk  else None,
-    "CVR_ra":      round(amp / reg * 100,  4) if reg  else None,
-    "CVR_ca":      round(amp / clk * 100,  4) if clk  else None,
-}
+if y_grasp:
+    D['period_totals'][yk] = {
+        "spend":       round(sp, 2),
+        "impressions": imp,
+        "reach":       imp,
+        "link_clicks": clk,
+        "apps":        pur,
+        "regs":        reg,
+        "amp_pur":     amp,
+        "CPM":         round(sp / imp * 1000, 2) if imp  else None,
+        "CPP":         round(sp / pur,        2) if pur  else None,
+        "CTR":         round(clk / imp * 100,  4) if imp  else None,
+        "CPC":         round(sp / clk,         2) if clk  else None,
+        "CPA_app":     round(sp / pur,         2) if pur  else None,
+        "CPA_reg":     round(sp / reg,         2) if reg  else None,
+        "CPA_amp_pur": round(sp / amp,         2) if amp  else None,
+        "CVR_cr":      round(reg / clk * 100,  4) if clk  else None,
+        "CVR_ra":      round(amp / reg * 100,  4) if reg  else None,
+        "CVR_ca":      round(amp / clk * 100,  4) if clk  else None,
+    }
+    ok(f"Yesterday rebuilt from creative RAW_DAILY")
+else:
+    info(f"No RAW_DAILY data for {ystr} — keeping Meta CSV data for yesterday period")
 
 # ── Update period_order and period_labels ──────────────────────────────────────
 if yk not in D['period_order']:
